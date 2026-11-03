@@ -307,6 +307,15 @@ body.memo-off .memo-box { display: none; }
 .md-body button[disabled] { opacity: .5; cursor: default; }
 .memosave small { font-size: 11.5px; font-weight: 500; opacity: .9; margin-left: 3px; }
 .md-chk + .md-chk { margin-left: 12px; } .md-chk input[disabled] + * { opacity: .5; }
+.memo-box { position: relative; padding-left: 26px; }
+.memo-fold { position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 4px; background: transparent;
+  color: var(--memo-bar); font-size: 13px; line-height: 20px; cursor: pointer; }
+.memo-fold:hover { background: var(--surface); }
+.memo-sum { display: none; }
+.memo-box.folded { padding-top: 2px; padding-bottom: 2px; }
+.memo-box.folded .memo-text, .memo-box.folded .memo-meta { display: none; }
+.memo-box.folded .memo-sum { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; opacity: .85; }
+.memo-box.folded .memo-fold { top: 1px; }
 </style>
 </head>
 <body data-ch="4">
@@ -399,7 +408,7 @@ body.memo-off .memo-box { display: none; }
 </div></div>
 <aside class="codepanel" id="codepanel" hidden aria-label="GitHub 코드">
   <div class="rz" role="separator" aria-orientation="vertical" tabindex="0" aria-label="패널 너비 조절 (끌거나 ←/→ 키, 더블클릭하면 초기화)" title="끌어서 너비 조절 · 더블클릭 = 초기화"></div>
-  <div class="cp-head"><div class="cp-title" id="cp-title"></div><span class="cp-tools"><button type="button" data-act="memo" title="메모 설정" aria-label="메모 설정">📝</button><button type="button" data-act="fs-" title="글자 작게" aria-label="글자 작게">A−</button><button type="button" data-act="fs+" title="글자 크게" aria-label="글자 크게">A+</button><button type="button" data-act="max" title="패널 넓게 / 원래대로" aria-label="패널 넓게 또는 원래대로" aria-pressed="false">⤢</button><button type="button" data-act="reset" title="크기 초기화" aria-label="크기 초기화">↺</button></span><button type="button" class="cp-close" id="cp-close" aria-label="닫기">×</button></div>
+  <div class="cp-head"><div class="cp-title" id="cp-title"></div><span class="cp-tools"><button type="button" data-act="memo" title="메모 설정" aria-label="메모 설정">📝</button><button type="button" data-act="memofold" title="메모 모두 접기" aria-label="메모 모두 접기" aria-pressed="false">⊟</button><button type="button" data-act="fs-" title="글자 작게" aria-label="글자 작게">A−</button><button type="button" data-act="fs+" title="글자 크게" aria-label="글자 크게">A+</button><button type="button" data-act="max" title="패널 넓게 / 원래대로" aria-label="패널 넓게 또는 원래대로" aria-pressed="false">⤢</button><button type="button" data-act="reset" title="크기 초기화" aria-label="크기 초기화">↺</button></span><button type="button" class="cp-close" id="cp-close" aria-label="닫기">×</button></div>
   <div class="cp-tabs" id="cp-tabs" role="tablist"></div>
   <div class="cp-meta" id="cp-meta"></div>
   <div class="cp-note" id="cp-note" hidden></div>
@@ -407,7 +416,7 @@ body.memo-off .memo-box { display: none; }
 </aside>
 <aside class="colabpanel" id="colabpanel" hidden aria-label="Colab 실행 코드">
   <div class="rz" role="separator" aria-orientation="vertical" tabindex="0" aria-label="패널 너비 조절 (끌거나 ←/→ 키, 더블클릭하면 초기화)" title="끌어서 너비 조절 · 더블클릭 = 초기화"></div>
-  <div class="cl-head"><div class="cl-title" id="cl-title"></div><span class="cp-tools"><button type="button" data-act="memo" title="메모 설정" aria-label="메모 설정">📝</button><button type="button" data-act="fs-" title="글자 작게" aria-label="글자 작게">A−</button><button type="button" data-act="fs+" title="글자 크게" aria-label="글자 크게">A+</button><button type="button" data-act="max" title="패널 넓게 / 원래대로" aria-label="패널 넓게 또는 원래대로" aria-pressed="false">⤢</button><button type="button" data-act="reset" title="크기 초기화" aria-label="크기 초기화">↺</button></span>
+  <div class="cl-head"><div class="cl-title" id="cl-title"></div><span class="cp-tools"><button type="button" data-act="memo" title="메모 설정" aria-label="메모 설정">📝</button><button type="button" data-act="memofold" title="메모 모두 접기" aria-label="메모 모두 접기" aria-pressed="false">⊟</button><button type="button" data-act="fs-" title="글자 작게" aria-label="글자 작게">A−</button><button type="button" data-act="fs+" title="글자 크게" aria-label="글자 크게">A+</button><button type="button" data-act="max" title="패널 넓게 / 원래대로" aria-label="패널 넓게 또는 원래대로" aria-pressed="false">⤢</button><button type="button" data-act="reset" title="크기 초기화" aria-label="크기 초기화">↺</button></span>
     <button type="button" class="b" id="cl-copyall">전체 복사</button>
     <button type="button" class="b" id="cl-nb">.ipynb 다운로드</button>
     <button type="button" class="cp-close" id="cl-close" aria-label="닫기" style="margin-left:auto">×</button></div>
@@ -509,7 +518,7 @@ body.memo-off .memo-box { display: none; }
   var MEMO = (function () {
     var REPO = 'hyskim74/Build-an-AI-Agent-study', BRANCH = 'main', FILE = 'memos.json';
     var API = 'https://api.github.com/repos/' + REPO + '/contents/' + FILE;
-    var K_TOK = 'agentmap-memo-token', K_CACHE = 'agentmap-memo-cache', K_PEND = 'agentmap-memo-pending', K_OFF = 'agentmap-memo-off', K_AUTO = 'agentmap-memo-manual';
+    var K_TOK = 'agentmap-memo-token', K_CACHE = 'agentmap-memo-cache', K_PEND = 'agentmap-memo-pending', K_OFF = 'agentmap-memo-off', K_AUTO = 'agentmap-memo-manual', K_FOLD = 'agentmap-memo-fold';
     var AUTO_DELAY = 20000;   // 마지막 변경 뒤 20초 동안 더 고치지 않으면 자동 저장 (그동안의 변경을 커밋 하나로)
     function lg(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
     function ls(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
@@ -521,6 +530,12 @@ body.memo-off .memo-box { display: none; }
     var pending = jparse(lg(K_PEND), []); if (!Array.isArray(pending)) pending = [];
     var st = { loaded: false, loading: false, saving: false, error: '', at: cache ? cache.at : 0, src: cache ? 'cache' : '' };
     var listeners = [];
+    /* 접기 상태는 이 브라우저의 보기 설정일 뿐 (GitHub에 올리지 않음): 기본값 + 메모별 예외 */
+    var fold = jparse(lg(K_FOLD), null); if (!fold || typeof fold !== 'object' || !fold.ids) fold = { all: false, ids: {} };
+    function isFolded(id) { return Object.prototype.hasOwnProperty.call(fold.ids, id) ? !!fold.ids[id] : !!fold.all; }
+    function saveFold() { ls(K_FOLD, JSON.stringify(fold)); }
+    function setFold(id, v) { if (v === !!fold.all) delete fold.ids[id]; else fold.ids[id] = v; saveFold(); }
+    function foldAll(v) { fold = { all: v, ids: {} }; saveFold(); }
     var editing = 0, dirty = false, cur = null;   // cur = 지금 열려 있는 메모 입력 칸 (화면 전체에서 하나)
     if (lg(K_OFF) === '1') document.body.classList.add('memo-off');
 
@@ -707,9 +722,12 @@ body.memo-off .memo-box { display: none; }
       Object.keys(byI).forEach(function (i) {
         var el = lines[+i], here = loc(+i), after = el;
         byI[i].sort(function (a, b) { return String(a.created).localeCompare(String(b.created)); }).forEach(function (m) {
-          var box = document.createElement('div'); box.className = 'memo-box'; box.dataset.id = m.id;
+          var box = document.createElement('div'); box.className = 'memo-box' + (isFolded(m.id) ? ' folded' : ''); box.dataset.id = m.id;
+          var first = String(m.text).split('\n')[0], more = String(m.text).indexOf('\n') >= 0;
           var elsewhere = m.loc && !(m.loc.path === here.path && m.loc.n === here.n);
-          box.innerHTML = '<div class="memo-text">' + esc(m.text) + '</div><div class="memo-meta">' +
+          box.innerHTML = '<button type="button" class="memo-fold" data-memo="fold" aria-expanded="' + !isFolded(m.id) + '" title="' + (isFolded(m.id) ? '메모 펴기' : '메모 접기') + '">' + (isFolded(m.id) ? '▸' : '▾') + '</button>' +
+            '<div class="memo-sum" title="눌러서 펴기">' + esc(first) + (more ? ' …' : '') + '</div>' +
+            '<div class="memo-text">' + esc(m.text) + '</div><div class="memo-meta">' +
             (elsewhere ? '<span class="memo-else">다른 곳에서 단 메모 ·</span> ' : '') + esc(locText(m.loc)) + ' · ' + esc(fmtDate(m.updated || m.created)) +
             (isPending(m.id) ? ' · <span class="memo-pend">저장 안 됨</span>' : '') +
             '<span class="sp"></span><button type="button" data-memo="edit">수정</button><button type="button" data-memo="del">삭제</button></div>';
@@ -751,6 +769,7 @@ body.memo-off .memo-box { display: none; }
         var now = new Date().toISOString(), m;
         if (memo) { m = Object.assign({}, memo, { text: text, updated: now }); }
         else { var c = ctxAt(info.texts, i); m = { id: newId(), text: text, line: c.line, before: c.before, after: c.after, loc: info.loc(i), created: now, updated: now }; }
+        if (isFolded(m.id)) setFold(m.id, false);   // 방금 쓴 메모는 펼친 채로
         close(); commit({ op: 'put', memo: m });
       }
       ed.addEventListener('keydown', function (e) {
@@ -769,7 +788,10 @@ body.memo-off .memo-box { display: none; }
         var pre = e.target.closest('pre.cp-code'); if (!pre || !pre.__memo) return;
         var add = e.target.closest('.memo-add');
         if (add) { e.preventDefault(); openEditor(pre, +add.dataset.i); return; }
+        var sum = e.target.closest('.memo-box.folded .memo-sum');
+        if (sum) { setFold(sum.closest('.memo-box').dataset.id, false); redecorate(pre); return; }
         var b = e.target.closest('.memo-box button'); if (!b) return;
+        if (b.dataset.memo === 'fold') { var bx = b.closest('.memo-box'); setFold(bx.dataset.id, !isFolded(bx.dataset.id)); redecorate(pre); return; }
         var box = b.closest('.memo-box'), m = all().find(function (x) { return x.id === box.dataset.id; }); if (!m) return;
         if (b.dataset.memo === 'edit') {
           var el = box.previousElementSibling; while (el && !el.classList.contains('ln')) el = el.previousElementSibling;
@@ -782,6 +804,10 @@ body.memo-off .memo-box { display: none; }
 
     /* --- 메모 버튼 · 설정 창 --- */
     function updateBtns() {
+      $$('.cp-tools [data-act=memofold]').forEach(function (b) {
+        b.textContent = fold.all ? '⊞' : '⊟'; b.setAttribute('aria-pressed', String(!!fold.all));
+        b.title = fold.all ? '메모 모두 펴기' : '메모 모두 접기'; b.setAttribute('aria-label', b.title);
+      });
       var n = all().length, k = pending.length, cls = st.error ? 'err' : (k ? 'pend' : (token ? 'ok' : 'ro'));
       $$('.cp-tools [data-act=memo]').forEach(function (b) {
         b.dataset.state = cls; b.textContent = '📝' + (n ? ' ' + n : '');
@@ -864,7 +890,9 @@ body.memo-off .memo-box { display: none; }
         '<p class="md-note">같은 코드 판단: 메모를 단 줄과, 그 위아래로 빈 줄이 아닌 줄 2개씩이 같으면 다른 상자·다른 장에서도 같은 메모가 보입니다 (공백 차이는 무시).</p>';
       if (typed) dlg.querySelector('#md-tok').value = typed;
     }
-    document.addEventListener('click', function (e) { if (e.target.closest('.cp-tools [data-act=memo]')) openDlg(); else if (e.target.closest('#memosave')) openSave(); });
+    document.addEventListener('click', function (e) {
+      if (e.target.closest('.cp-tools [data-act=memofold]')) { foldAll(!fold.all); changed(); return; }
+      if (e.target.closest('.cp-tools [data-act=memo]')) openDlg(); else if (e.target.closest('#memosave')) openSave(); });
     window.addEventListener('keydown', function (e) {   // 설정 창이 열려 있으면 Esc는 창만 닫음 (코드 패널은 그대로)
       if (e.key === 'Escape' && dlg && !dlg.hidden) { e.preventDefault(); e.stopPropagation(); closeDlg(); return; }
       if ((e.key === 's' || e.key === 'S') && (e.ctrlKey || e.metaKey) && !e.altKey) {   // Ctrl+S = 메모 저장 창 (편집 중이면 그 메모를 먼저 담음)
