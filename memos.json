@@ -1,4 +1,27 @@
 {
- "version": 1,
- "memos": []
+  "version": 1,
+  "memos": [
+    {
+      "id": "mw0127j7-6zqww6",
+      "text": "책에는 이 코드를 사용하는 부분은 없음\n다만 cache에 필요한 내용이 모두 포함되어 있는 경우 \nLlmResponse 생성이 불필요하기 때문에 차후의 확장을 위해 포함된 코드.",
+      "line": "if isinstance(cb_result, LlmResponse):",
+      "before": [
+        "cb_result = await cb_result",
+        "if hasattr(cb_result, \"__await__\"):"
+      ],
+      "after": [
+        "llm_response = cb_result",
+        "break"
+      ],
+      "loc": {
+        "ch": 6,
+        "path": "notebooks/ch06/agent.py",
+        "n": 156,
+        "box": "for callback in self.before_llm_callbacks",
+        "tab": "6장: Agent.step"
+      },
+      "created": "2026-11-03T01:47:07.554Z",
+      "updated": "2026-11-03T01:47:07.554Z"
+    }
+  ]
 }
