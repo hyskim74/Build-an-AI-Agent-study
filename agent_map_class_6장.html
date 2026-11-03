@@ -238,6 +238,56 @@ body[data-ch="5"], body[data-ch="6"] { --c47: #16a34a; }
 .cp-tools button:hover, .cp-tools button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 body.rzing { user-select: none; cursor: ew-resize; }
 @media (max-width: 700px) { .rz { display: none; } }
+/* ===== 코드 메모 ===== */
+:root { --memo-bg: #f2edff; --memo-bar: #7434dd; --memo-ink: #2a1b4d; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --memo-bg: #241a3a; --memo-bar: #bb95ff; --memo-ink: #ece4ff; } }
+:root[data-theme="dark"] { --memo-bg: #241a3a; --memo-bar: #bb95ff; --memo-ink: #ece4ff; }
+.cp-code .memo-add { cursor: pointer; border-radius: 3px; }
+.cp-code .memo-add:hover { color: var(--memo-bar); background: var(--memo-bg); font-weight: 700; }
+.cp-code .mg { display: inline-block; width: 18px; margin-left: -6px; margin-right: 4px; text-align: center; color: transparent; user-select: none; }
+.cp-code .ln:hover > .mg.memo-add { color: var(--ln); }
+.cp-code .ln.has-memo > .no, .cp-code .ln.has-memo > .mg { color: var(--memo-bar); font-weight: 700; }
+.cp-code .ln.has-memo > .mg { font-size: 0; }
+.cp-code .ln.has-memo > .mg::before { content: "●"; font-size: 10px; }
+.memo-box, .memo-edit { display: block; white-space: normal; font-family: var(--font); font-size: 13.5px; line-height: 1.5; color: var(--memo-ink);
+  margin: 3px 12px 6px calc(4.6em + 3px); background: var(--memo-bg); border-left: 3px solid var(--memo-bar); border-radius: 4px; padding: 5px 9px; }
+.cc .memo-box, .cc .memo-edit { margin-left: 18px; }
+body.memo-off .memo-box { display: none; }
+.memo-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.memo-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 6px; margin-top: 3px; font-size: 12px; color: var(--muted); }
+.memo-meta .sp { flex: 1; }
+.memo-meta code { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 11.5px; }
+.memo-meta button { font: inherit; font-size: 12px; border: 1px solid var(--line-soft); background: var(--surface); color: var(--fg); padding: 1px 8px; border-radius: 5px; cursor: pointer; }
+.memo-meta button:hover { border-color: var(--memo-bar); color: var(--memo-bar); }
+.memo-meta button.pri { background: var(--memo-bar); border-color: var(--memo-bar); color: var(--surface); font-weight: 700; }
+.memo-else { color: var(--memo-bar); font-weight: 700; }
+.memo-pend { color: var(--c47); font-weight: 700; }
+.memo-edit textarea { display: block; width: 100%; min-height: 4.5em; resize: vertical; font: inherit; font-size: 14px; color: var(--fg); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 5px; padding: 5px 7px; }
+.memo-edit textarea:focus { outline: 2px solid var(--memo-bar); outline-offset: 0; }
+.cp-tools button[data-act=memo] { min-width: 40px; }
+.cp-tools button[data-act=memo][data-state=ok] { color: var(--memo-bar); border-color: var(--memo-bar); }
+.cp-tools button[data-act=memo][data-state=pend] { color: var(--c47); border-color: var(--c47); }
+.cp-tools button[data-act=memo][data-state=err] { color: #c62828; border-color: #c62828; }
+.tab-memo { font-size: 12px; margin-left: 2px; }
+.memo-dlg { position: fixed; inset: 0; z-index: 50; background: rgba(10,14,20,.45); display: flex; align-items: center; justify-content: center; padding: 12px; }
+.md-card { width: min(560px, 100%); max-height: 100%; overflow: auto; background: var(--surface); color: var(--fg); border-radius: 12px; border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+.md-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--line-soft); font-size: 16px; }
+.md-body { padding: 4px 16px 14px; font-size: 14px; line-height: 1.55; }
+.md-body h4 { margin: 14px 0 4px; font-size: 14.5px; }
+.md-body p { margin: 8px 0; }
+.md-body code { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12.5px; }
+.md-body button { font: inherit; font-size: 13.5px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); padding: 3px 10px; border-radius: 6px; cursor: pointer; }
+.md-body button:hover { border-color: var(--memo-bar); color: var(--memo-bar); }
+.md-body button.pri { background: var(--memo-bar); border-color: var(--memo-bar); color: var(--surface); font-weight: 700; }
+.md-row { display: flex; gap: 6px; } .md-row input { flex: 1; min-width: 0; font: inherit; font-size: 14px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); }
+.md-chk { display: inline-flex; align-items: center; gap: 5px; margin-left: 8px; }
+.md-how { margin: 6px 0; padding-left: 20px; } .md-how a { color: var(--accent); font-weight: 500; }
+.md-note { font-size: 12.5px; color: var(--muted); }
+.md-state { font-size: 14.5px; } .md-ok { color: var(--a-tool); font-weight: 700; } .md-err { color: #c62828; font-weight: 700; }
+.md-sub { color: var(--muted); font-size: 13px; }
+.memo-jump { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px; color: var(--memo-bar); font-weight: 700; }
+.memo-jump button { font: inherit; font-size: 12px; font-weight: 600; border: 1px solid var(--memo-bar); background: var(--memo-bg); color: var(--memo-bar); padding: 0 6px; border-radius: 5px; cursor: pointer; }
 </style>
 </head>
 <body data-ch="4">
@@ -329,7 +379,7 @@ body.rzing { user-select: none; cursor: ew-resize; }
 </div></div>
 <aside class="codepanel" id="codepanel" hidden aria-label="GitHub 코드">
   <div class="rz" role="separator" aria-orientation="vertical" tabindex="0" aria-label="패널 너비 조절 (끌거나 ←/→ 키, 더블클릭하면 초기화)" title="끌어서 너비 조절 · 더블클릭 = 초기화"></div>
-  <div class="cp-head"><div class="cp-title" id="cp-title"></div><span class="cp-tools"><button type="button" data-act="fs-" title="글자 작게" aria-label="글자 작게">A−</button><button type="button" data-act="fs+" title="글자 크게" aria-label="글자 크게">A+</button><button type="button" data-act="max" title="패널 넓게 / 원래대로" aria-label="패널 넓게 또는 원래대로" aria-pressed="false">⤢</button><button type="button" data-act="reset" title="크기 초기화" aria-label="크기 초기화">↺</button></span><button type="button" class="cp-close" id="cp-close" aria-label="닫기">×</button></div>
+  <div class="cp-head"><div class="cp-title" id="cp-title"></div><span class="cp-tools"><button type="button" data-act="memo" title="메모 설정" aria-label="메모 설정">📝</button><button type="button" data-act="fs-" title="글자 작게" aria-label="글자 작게">A−</button><button type="button" data-act="fs+" title="글자 크게" aria-label="글자 크게">A+</button><button type="button" data-act="max" title="패널 넓게 / 원래대로" aria-label="패널 넓게 또는 원래대로" aria-pressed="false">⤢</button><button type="button" data-act="reset" title="크기 초기화" aria-label="크기 초기화">↺</button></span><button type="button" class="cp-close" id="cp-close" aria-label="닫기">×</button></div>
   <div class="cp-tabs" id="cp-tabs" role="tablist"></div>
   <div class="cp-meta" id="cp-meta"></div>
   <div class="cp-note" id="cp-note" hidden></div>
@@ -337,7 +387,7 @@ body.rzing { user-select: none; cursor: ew-resize; }
 </aside>
 <aside class="colabpanel" id="colabpanel" hidden aria-label="Colab 실행 코드">
   <div class="rz" role="separator" aria-orientation="vertical" tabindex="0" aria-label="패널 너비 조절 (끌거나 ←/→ 키, 더블클릭하면 초기화)" title="끌어서 너비 조절 · 더블클릭 = 초기화"></div>
-  <div class="cl-head"><div class="cl-title" id="cl-title"></div><span class="cp-tools"><button type="button" data-act="fs-" title="글자 작게" aria-label="글자 작게">A−</button><button type="button" data-act="fs+" title="글자 크게" aria-label="글자 크게">A+</button><button type="button" data-act="max" title="패널 넓게 / 원래대로" aria-label="패널 넓게 또는 원래대로" aria-pressed="false">⤢</button><button type="button" data-act="reset" title="크기 초기화" aria-label="크기 초기화">↺</button></span>
+  <div class="cl-head"><div class="cl-title" id="cl-title"></div><span class="cp-tools"><button type="button" data-act="memo" title="메모 설정" aria-label="메모 설정">📝</button><button type="button" data-act="fs-" title="글자 작게" aria-label="글자 작게">A−</button><button type="button" data-act="fs+" title="글자 크게" aria-label="글자 크게">A+</button><button type="button" data-act="max" title="패널 넓게 / 원래대로" aria-label="패널 넓게 또는 원래대로" aria-pressed="false">⤢</button><button type="button" data-act="reset" title="크기 초기화" aria-label="크기 초기화">↺</button></span>
     <button type="button" class="b" id="cl-copyall">전체 복사</button>
     <button type="button" class="b" id="cl-nb">.ipynb 다운로드</button>
     <button type="button" class="cp-close" id="cl-close" aria-label="닫기" style="margin-left:auto">×</button></div>
@@ -435,6 +485,304 @@ body.rzing { user-select: none; cursor: ew-resize; }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
   var panel = $('#codepanel'), cpTitle = $('#cp-title'), cpTabs = $('#cp-tabs'), cpMeta = $('#cp-meta'), cpNote = $('#cp-note'), cpBody = $('#cp-body');
   var cl = $('#colabpanel'), clBody = $('#cl-body'), clBtn = $('#colabbtn'), wrap = $('#info-wrap');
+  /* ---------- 코드 메모 (줄 단위 · GitHub memos.json에 저장) ---------- */
+  var MEMO = (function () {
+    var REPO = 'hyskim74/build-an-ai-agent-study', BRANCH = 'main', FILE = 'memos.json';
+    var API = 'https://api.github.com/repos/' + REPO + '/contents/' + FILE;
+    var K_TOK = 'agentmap-memo-token', K_CACHE = 'agentmap-memo-cache', K_PEND = 'agentmap-memo-pending', K_OFF = 'agentmap-memo-off';
+    function lg(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+    function ls(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
+    function jparse(s, d) { try { return s ? JSON.parse(s) : d; } catch (e) { return d; } }
+    var token = lg(K_TOK) || '';
+    var cache = jparse(lg(K_CACHE), null);
+    var remote = cache && cache.doc && Array.isArray(cache.doc.memos) ? cache.doc : { version: 1, memos: [] };
+    var sha = cache ? cache.sha || null : null;
+    var pending = jparse(lg(K_PEND), []); if (!Array.isArray(pending)) pending = [];
+    var st = { loaded: false, loading: false, saving: false, error: '', at: cache ? cache.at : 0, src: cache ? 'cache' : '' };
+    var listeners = [];
+    var editing = 0, dirty = false;
+    if (lg(K_OFF) === '1') document.body.classList.add('memo-off');
+
+    /* --- 글자 처리 --- */
+    var tmp = document.createElement('div');
+    function htmlText(h) { tmp.innerHTML = h; return tmp.textContent; }
+    function norm(t) { return String(t).replace(/\s+/g, ' ').trim(); }
+    function textsOf(htmlLines) { return htmlLines.map(function (h) { return norm(htmlText(h)); }); }
+    function b64enc(str) {
+      var bytes = new TextEncoder().encode(str), bin = '';
+      for (var i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      return btoa(bin);
+    }
+    function b64dec(b) { var bin = atob(String(b).replace(/\s/g, '')), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new TextDecoder().decode(u); }
+    function newId() { var s = Date.now().toString(36) + '-'; for (var i = 0; i < 6; i++) s += Math.floor(Math.random() * 36).toString(36); return s; }
+
+    /* --- 같은 코드인지: 그 줄 + 앞뒤로 빈 줄이 아닌 줄 2개씩. 보이는 코드의 끝에서 잘린 쪽은 비교하지 않음 --- */
+    function ctxAt(texts, i) {
+      var b = [], a = [], j;
+      for (j = i - 1; j >= 0 && b.length < 2; j--) if (texts[j]) b.push(texts[j]);
+      for (j = i + 1; j < texts.length && a.length < 2; j++) if (texts[j]) a.push(texts[j]);
+      return { line: texts[i], before: b, after: a };
+    }
+    function same(x, y) { for (var k = 0; k < Math.min(x.length, y.length); k++) if (x[k] !== y[k]) return false; return true; }
+    function matches(m, c) { return m.line === c.line && same(m.before || [], c.before) && same(m.after || [], c.after); }
+
+    /* --- 메모 목록 = GitHub에 있는 것 + 아직 못 올린 변경 --- */
+    function applyOps(list, ops) {
+      list = list.slice();
+      ops.forEach(function (op) {
+        if (op.op === 'put') { var k = list.findIndex(function (m) { return m.id === op.memo.id; }); if (k >= 0) list[k] = op.memo; else list.push(op.memo); }
+        else if (op.op === 'del') list = list.filter(function (m) { return m.id !== op.id; });
+      });
+      return list;
+    }
+    function all() { return applyOps(remote.memos || [], pending); }
+    function byLine() { var ix = {}; all().forEach(function (m) { (ix[m.line] = ix[m.line] || []).push(m); }); return ix; }
+    function findFor(texts) {
+      var ix = byLine(), res = [];
+      texts.forEach(function (t, i) { if (!t || !ix[t]) return; var c = ctxAt(texts, i); ix[t].forEach(function (m) { if (matches(m, c)) res.push({ i: i, m: m }); }); });
+      return res;
+    }
+    function countFor(texts) { return findFor(texts).length; }
+
+    /* --- GitHub 통신 --- */
+    function hdr(withTok) { var h = { Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }; if (withTok && token) h.Authorization = 'Bearer ' + token; return h; }
+    function getRemote() {
+      // 토큰이 있으면 API(가장 최신 + sha). 없으면 API(시간당 60회 제한) → 이 페이지와 같은 곳의 memos.json → raw.githubusercontent
+      return fetch(API + '?ref=' + BRANCH + '&t=' + Date.now(), { headers: hdr(true), cache: 'no-store' }).then(function (r) {
+        if (r.status === 404) return { doc: { version: 1, memos: [] }, sha: null, src: 'api' };
+        if (!r.ok) { var e = new Error('HTTP ' + r.status); e.status = r.status; throw e; }
+        return r.json().then(function (j) { return { doc: JSON.parse(b64dec(j.content || '')), sha: j.sha, src: 'api' }; });
+      }).catch(function (e) {
+        if (token) throw e;
+        var urls = [];
+        if (/^https?:/.test(location.protocol)) urls.push(new URL(FILE, location.href).href);
+        urls.push('https://raw.githubusercontent.com/' + REPO + '/' + BRANCH + '/' + FILE);
+        function tryAt(k) {
+          if (k >= urls.length) throw e;
+          return fetch(urls[k] + '?t=' + Date.now(), { cache: 'no-store' }).then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json().then(function (doc) { return { doc: doc, sha: null, src: 'file' }; });
+          }).catch(function () { return tryAt(k + 1); });
+        }
+        return tryAt(0);
+      });
+    }
+    function keep(doc, s, src) {
+      if (!doc || !Array.isArray(doc.memos)) doc = { version: 1, memos: [] };
+      remote = doc; if (s !== undefined) sha = s; st.at = Date.now(); st.src = src || st.src; st.loaded = true;
+      ls(K_CACHE, JSON.stringify({ doc: remote, sha: sha, at: st.at }));
+    }
+    function load() {
+      if (st.loading) return Promise.resolve(); st.loading = true; changed();
+      return getRemote().then(function (r) { keep(r.doc, r.sha, r.src); st.error = ''; })
+        .catch(function (e) { st.error = errText(e, 'load'); })
+        .then(function () { st.loading = false; changed(); if (token && pending.length) flush(); });
+    }
+    function errText(e, what) {
+      var s = e && e.status;
+      if (s === 401) return '토큰이 틀렸거나 만료됐습니다 (401).';
+      if (s === 403) return what === 'save' ? '토큰에 이 저장소 Contents 쓰기 권한이 없습니다 (403).' : 'GitHub 요청 한도를 넘었거나 권한이 없습니다 (403). 잠시 뒤 다시 시도하세요.';
+      if (s === 404) return '저장소를 찾지 못했습니다 (404). 토큰의 Repository access에 이 저장소가 들어 있는지 확인하세요.';
+      return (what === 'save' ? 'GitHub에 저장하지 못했습니다' : 'GitHub에서 메모를 읽지 못했습니다') + ' (' + (e && e.message || '네트워크 오류') + ').';
+    }
+    var flushing = null, again = false;
+    function flush() {
+      if (!token || !pending.length) { changed(); return Promise.resolve(); }
+      if (flushing) { again = true; return flushing; }
+      st.saving = true; changed();
+      var tries = 0;
+      function attempt() {
+        tries++;
+        var sent = pending.slice();
+        return getRemote().then(function (r) {
+          var doc = { version: 1, memos: applyOps(r.doc.memos || [], sent) };
+          var adds = sent.filter(function (o) { return o.op === 'put'; }).length, dels = sent.length - adds;
+          var msg = 'memo: ' + (adds ? '추가·수정 ' + adds + '개' : '') + (adds && dels ? ', ' : '') + (dels ? '삭제 ' + dels + '개' : '');
+          var body = { message: msg, content: b64enc(JSON.stringify(doc, null, 1) + '\n'), branch: BRANCH };
+          if (r.sha) body.sha = r.sha;
+          return fetch(API, { method: 'PUT', headers: Object.assign(hdr(true), { 'Content-Type': 'application/json' }), body: JSON.stringify(body) }).then(function (res) {
+            if ((res.status === 409 || res.status === 422) && tries < 4) return attempt();   // 다른 기기가 먼저 저장함 → 다시 읽고 다시 적용
+            if (!res.ok) { var e = new Error('HTTP ' + res.status); e.status = res.status; throw e; }
+            return res.json().then(function (j) {
+              pending = pending.slice(sent.length); ls(K_PEND, JSON.stringify(pending));
+              keep(doc, j.content && j.content.sha, 'api'); st.error = '';
+            });
+          });
+        });
+      }
+      flushing = attempt().catch(function (e) { st.error = errText(e, 'save'); }).then(function () {
+        st.saving = false; flushing = null; changed();
+        if (again && pending.length && !st.error) { again = false; return flush(); } again = false;
+      });
+      return flushing;
+    }
+    function commit(op) { pending.push(op); ls(K_PEND, JSON.stringify(pending)); changed(); return flush(); }
+
+    /* --- 화면 --- */
+    function changed() { if (editing) { dirty = true; } else { listeners.forEach(function (f) { try { f(); } catch (e) {} }); } updateBtns(); renderDlg(); }
+    function onChange(f) { listeners.push(f); }
+    function fmtDate(s) { var d = new Date(s); return isNaN(d) ? '' : (d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2)); }
+    function locText(l) { return l ? ((l.ch ? l.ch + '장 · ' : '') + (l.path || '') + (l.n ? ' L' + l.n : '')) : ''; }
+    function isPending(id) { return pending.some(function (o) { return (o.memo && o.memo.id === id) || o.id === id; }); }
+
+    // container: <pre class="cp-code"> · texts: 줄마다 글자 · loc(i): 그 줄의 위치 정보
+    function decorate(pre, texts, loc) {
+      if (!pre) return;
+      pre.__memo = { texts: texts, loc: loc };
+      $$('.memo-box, .memo-edit', pre).forEach(function (x) { x.remove(); });
+      var lines = $$('.ln', pre);
+      lines.forEach(function (el, i) {
+        el.classList.remove('has-memo');
+        var g = el.querySelector('.no') || el.querySelector('.mg');
+        if (!g) { g = document.createElement('span'); g.className = 'mg'; g.textContent = '+'; el.insertBefore(g, el.firstChild); }
+        if (texts[i]) { g.classList.add('memo-add'); g.title = '이 줄에 메모 달기'; g.setAttribute('role', 'button'); g.tabIndex = -1; g.dataset.i = i; }
+      });
+      var found = findFor(texts);
+      found.forEach(function (f) { var el = lines[f.i]; if (!el) return; el.classList.add('has-memo'); });
+      // 같은 줄의 메모는 그 줄 바로 아래에 차례대로
+      var byI = {}; found.forEach(function (f) { (byI[f.i] = byI[f.i] || []).push(f.m); });
+      Object.keys(byI).forEach(function (i) {
+        var el = lines[+i], here = loc(+i), after = el;
+        byI[i].sort(function (a, b) { return String(a.created).localeCompare(String(b.created)); }).forEach(function (m) {
+          var box = document.createElement('div'); box.className = 'memo-box'; box.dataset.id = m.id;
+          var elsewhere = m.loc && !(m.loc.path === here.path && m.loc.n === here.n);
+          box.innerHTML = '<div class="memo-text">' + esc(m.text) + '</div><div class="memo-meta">' +
+            (elsewhere ? '<span class="memo-else">다른 곳에서 단 메모 ·</span> ' : '') + esc(locText(m.loc)) + ' · ' + esc(fmtDate(m.updated || m.created)) +
+            (isPending(m.id) ? ' · <span class="memo-pend">' + (token ? 'GitHub에 올리는 중' : '이 기기에만 있음') + '</span>' : '') +
+            '<span class="sp"></span><button type="button" data-memo="edit">수정</button><button type="button" data-memo="del">삭제</button></div>';
+          after.insertAdjacentElement('afterend', box); after = box;
+        });
+      });
+    }
+    function redecorate(pre) { if (pre && pre.__memo) decorate(pre, pre.__memo.texts, pre.__memo.loc); }
+    function openEditor(pre, i, memo) {
+      if (pre.querySelector('.memo-edit')) { var ta0 = pre.querySelector('.memo-edit textarea'); if (ta0) ta0.focus(); return; }
+      var info = pre.__memo; if (!info) return;
+      var lines = $$('.ln', pre), el = lines[i]; if (!el) return;
+      var anchor = el, sib = el.nextElementSibling;
+      while (sib && sib.classList.contains('memo-box')) { if (memo && sib.dataset.id === memo.id) { anchor = sib; break; } anchor = sib; sib = sib.nextElementSibling; }
+      var ed = document.createElement('div'); ed.className = 'memo-edit';
+      ed.innerHTML = '<textarea rows="3" placeholder="이 줄에 대한 메모 (Ctrl+Enter 저장 · Esc 취소)"></textarea><div class="memo-meta">' +
+        (token ? '저장하면 GitHub <code>memos.json</code>에 바로 올라갑니다.' : '<b>토큰이 없어서 이 기기에만 저장됩니다.</b> <button type="button" data-memo="setup">토큰 넣기</button>') +
+        '<span class="sp"></span><button type="button" data-memo="cancel">취소</button><button type="button" class="pri" data-memo="save">저장</button></div>';
+      if (memo) { var box = pre.querySelector('.memo-box[data-id="' + memo.id + '"]'); if (box) box.hidden = true; }
+      anchor.insertAdjacentElement('afterend', ed);
+      var ta = ed.querySelector('textarea'); ta.value = memo ? memo.text : '';
+      editing++;
+      function close() { ed.remove(); editing = Math.max(0, editing - 1); if (dirty && !editing) { dirty = false; changed(); } else redecorate(pre); }
+      function save() {
+        var text = ta.value.replace(/\s+$/, '');
+        if (!text) { if (memo) { close(); commit({ op: 'del', id: memo.id }); } else close(); return; }
+        var now = new Date().toISOString(), m;
+        if (memo) { m = Object.assign({}, memo, { text: text, updated: now }); }
+        else { var c = ctxAt(info.texts, i); m = { id: newId(), text: text, line: c.line, before: c.before, after: c.after, loc: info.loc(i), created: now, updated: now }; }
+        close(); commit({ op: 'put', memo: m });
+      }
+      ed.addEventListener('keydown', function (e) {
+        e.stopPropagation();   // 지도 확대 단축키(+ − 0)와 Esc(패널 닫기)로 새지 않게
+        if (e.key === 'Escape') { e.preventDefault(); close(); }
+        else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); save(); }
+      });
+      ed.addEventListener('click', function (e) {
+        var b = e.target.closest('button'); if (!b) return;
+        if (b.dataset.memo === 'save') save(); else if (b.dataset.memo === 'cancel') close(); else if (b.dataset.memo === 'setup') openDlg();
+      });
+      ta.focus();
+    }
+    function bind(scroller) {
+      scroller.addEventListener('click', function (e) {
+        var pre = e.target.closest('pre.cp-code'); if (!pre || !pre.__memo) return;
+        var add = e.target.closest('.memo-add');
+        if (add) { e.preventDefault(); openEditor(pre, +add.dataset.i); return; }
+        var b = e.target.closest('.memo-box button'); if (!b) return;
+        var box = b.closest('.memo-box'), m = all().find(function (x) { return x.id === box.dataset.id; }); if (!m) return;
+        if (b.dataset.memo === 'edit') {
+          var el = box.previousElementSibling; while (el && !el.classList.contains('ln')) el = el.previousElementSibling;
+          openEditor(pre, $$('.ln', pre).indexOf(el), m);
+        } else if (b.dataset.memo === 'del') {
+          if (confirm('이 메모를 지울까요?\n\n' + m.text.slice(0, 200) + '\n\n같은 코드가 나오는 다른 곳에서도 함께 지워집니다.')) commit({ op: 'del', id: m.id });
+        }
+      });
+    }
+
+    /* --- 메모 버튼 · 설정 창 --- */
+    function updateBtns() {
+      var n = all().length, cls = st.error ? 'err' : (pending.length ? 'pend' : (token ? 'ok' : 'ro'));
+      $$('.cp-tools [data-act=memo]').forEach(function (b) {
+        b.dataset.state = cls; b.textContent = '📝' + (n ? ' ' + n : '');
+        b.title = '메모 설정 · ' + (st.error ? st.error : pending.length ? '아직 GitHub에 못 올린 변경 ' + pending.length + '개' : token ? 'GitHub에 연결됨' : '읽기 전용 (토큰 없음)');
+      });
+    }
+    var dlg = null;
+    function openDlg() {
+      if (!dlg) {
+        dlg = document.createElement('div'); dlg.className = 'memo-dlg'; dlg.hidden = true;
+        dlg.innerHTML = '<div class="md-card" role="dialog" aria-modal="true" aria-label="메모 설정"><div class="md-head"><b>📝 코드 메모</b><button type="button" class="cp-close" data-md="close" aria-label="닫기">×</button></div><div class="md-body"></div></div>';
+        document.body.appendChild(dlg);
+        dlg.addEventListener('keydown', function (e) { e.stopPropagation(); });   // 지도 확대 단축키로 새지 않게
+        dlg.addEventListener('click', function (e) {
+          if (e.target === dlg) return closeDlg();
+          var b = e.target.closest('[data-md]'); if (!b) return; var a = b.dataset.md;
+          if (a === 'close') closeDlg();
+          else if (a === 'savetok') { var v = dlg.querySelector('#md-tok').value.trim(); if (!v) return; token = v; ls(K_TOK, v); st.error = ''; load(); }
+          else if (a === 'deltok') { if (confirm('이 브라우저에서 토큰을 지울까요? (GitHub의 토큰 자체는 그대로 있습니다)')) { token = ''; ls(K_TOK, null); st.error = ''; changed(); } }
+          else if (a === 'sync') { st.error = ''; load(); }
+          else if (a === 'show') { var off = !b.checked; document.body.classList.toggle('memo-off', off); ls(K_OFF, off ? '1' : null); }
+          else if (a === 'droppend') { if (confirm('GitHub에 못 올린 변경 ' + pending.length + '개를 버릴까요?')) { pending = []; ls(K_PEND, null); st.error = ''; changed(); } }
+        });
+      }
+      dlg.hidden = false; renderDlg(); var f = dlg.querySelector('#md-tok') || dlg.querySelector('button'); if (f) f.focus();
+    }
+    function closeDlg() { if (dlg) dlg.hidden = true; }
+    function renderDlg() {
+      if (!dlg || dlg.hidden) return;
+      var n = all().length, tokInput = dlg.querySelector('#md-tok'), typed = tokInput ? tokInput.value : '';
+      var state = st.loading ? '불러오는 중…' : st.saving ? 'GitHub에 저장하는 중…' : st.error ? '<span class="md-err">' + esc(st.error) + '</span>' :
+        token ? '<span class="md-ok">GitHub에 연결됨</span> — 메모를 저장하면 저장소의 <code>' + FILE + '</code>에 바로 커밋됩니다.' :
+        '<b>읽기 전용</b> — 토큰이 없어 GitHub에 있는 메모를 볼 수만 있습니다. 이 상태에서 쓴 메모는 이 기기에만 남고, 토큰을 넣으면 그때 올라갑니다.';
+      dlg.querySelector('.md-body').innerHTML =
+        '<p class="md-state">' + state + '</p>' +
+        '<p class="md-sub">메모 ' + n + '개' + (st.at ? ' · 마지막으로 읽은 때 ' + new Date(st.at).toLocaleString('ko-KR') : '') +
+        (pending.length ? ' · <b>아직 GitHub에 못 올린 변경 ' + pending.length + '개</b> <button type="button" data-md="droppend">버리기</button>' : '') + '</p>' +
+        '<p><button type="button" data-md="sync">지금 다시 읽기' + (token && pending.length ? ' · 올리기' : '') + '</button> ' +
+        '<label class="md-chk"><input type="checkbox" data-md="show"' + (document.body.classList.contains('memo-off') ? '' : ' checked') + '> 코드에 메모 보이기</label></p>' +
+        '<h4>GitHub 토큰 (쓰기용 · 기기마다 한 번)</h4>' +
+        (token ? '<p>이 브라우저에 토큰이 저장돼 있습니다 (<code>' + esc(token.slice(0, 11)) + '…</code>). <button type="button" data-md="deltok">이 브라우저에서 지우기</button></p>' : '') +
+        '<p class="md-row"><input id="md-tok" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"><button type="button" class="pri" data-md="savetok">' + (token ? '바꾸기' : '저장') + '</button></p>' +
+        '<ol class="md-how"><li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → Fine-grained token 만들기 ↗</a></li>' +
+        '<li><b>Repository access</b>: Only select repositories → <code>' + REPO.split('/')[1] + '</code></li>' +
+        '<li><b>Permissions → Contents</b>: Read and write (다른 권한은 필요 없음)</li>' +
+        '<li>만든 토큰을 위 칸에 붙여 넣고 저장</li></ol>' +
+        '<p class="md-note">토큰은 이 브라우저(localStorage)에만 저장되고 저장소에는 올라가지 않습니다. 공용 PC라면 다 쓴 뒤 지우세요. 저장소가 공개라서 <b>메모 내용도 공개</b>됩니다. 메모 하나를 저장할 때마다 커밋이 하나 생깁니다.</p>' +
+        '<p class="md-note">같은 코드 판단: 메모를 단 줄과, 그 위아래로 빈 줄이 아닌 줄 2개씩이 같으면 다른 상자·다른 장에서도 같은 메모가 보입니다 (공백 차이는 무시).</p>';
+      if (typed) dlg.querySelector('#md-tok').value = typed;
+    }
+    document.addEventListener('click', function (e) { var b = e.target.closest('.cp-tools [data-act=memo]'); if (b) openDlg(); });
+    window.addEventListener('keydown', function (e) {   // 설정 창이 열려 있으면 Esc는 창만 닫음 (코드 패널은 그대로)
+      if (e.key === 'Escape' && dlg && !dlg.hidden) { e.preventDefault(); e.stopPropagation(); closeDlg(); }
+    }, true);
+
+    load();
+    setInterval(function () { if (!document.hidden && !editing && !st.saving) load(); }, 5 * 60 * 1000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - st.at > 60 * 1000 && !editing) load(); });
+    return { textsOf: textsOf, decorate: decorate, redecorate: redecorate, countFor: countFor, bind: bind, onChange: onChange, update: updateBtns, _st: st, _all: all };
+  })();
+  var poolTexts = {};
+  function snipTexts(pi) { return poolTexts[pi] || (poolTexts[pi] = MEMO.textsOf(POOL[pi].lines)); }
+  var curD = null;
+  function memoJumps() {
+    var old = $('.memo-jump', cpMeta); if (old) old.remove();
+    var pre = $('pre', cpBody); if (!pre) return;
+    var ls = $$('.ln.has-memo', pre); if (!ls.length) return;
+    var sp = document.createElement('span'); sp.className = 'memo-jump';
+    sp.innerHTML = '📝 메모 ' + ls.map(function (l) { return '<button type="button" data-n="' + l.dataset.n + '">L' + l.dataset.n + '</button>'; }).join('');
+    sp.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; var l = $('.ln[data-n="' + b.dataset.n + '"]', pre); if (l) cpBody.scrollTop = Math.max(0, cpBody.scrollTop + l.getBoundingClientRect().top - cpBody.getBoundingClientRect().top - 40); });
+    cpMeta.appendChild(sp);
+  }
+  function memoTabs(d) {
+    $$('button', cpTabs).forEach(function (b, i) { var sn = d.snips[i], n = sn && sn.p >= 0 ? MEMO.countFor(snipTexts(sn.p)) : 0;
+      b.innerHTML = esc(sn.tab) + (n ? ' <span class="tab-memo" title="이 코드에 달린 메모">📝' + n + '</span>' : ''); });
+  }
 
   /* ---------- GitHub 코드 패널 ---------- */
   function showSnip(d, i) {
@@ -452,6 +800,8 @@ body.rzing { user-select: none; cursor: ew-resize; }
     var out = p.lines.map(function (h, k) { var n = p.start + k;
       return '<span class="ln' + (hl[n] ? ' hl' : '') + '" data-n="' + n + '"><span class="no">' + n + '</span>' + h + '</span>'; }).join('');
     cpBody.innerHTML = '<pre class="cp-code">' + out + '</pre>';
+    MEMO.decorate($('pre', cpBody), snipTexts(sn.p), function (k) { return { ch: ch, path: p.path, n: p.start + k, box: d.title, tab: sn.tab }; });
+    memoJumps();
     cpBody.scrollTop = 0;
     var first = $('.ln.hl', cpBody);
     if (first) cpBody.scrollTop = Math.max(0, first.offsetTop - 60);
@@ -465,6 +815,7 @@ body.rzing { user-select: none; cursor: ew-resize; }
     cpTitle.textContent = d.title;
     cpTabs.innerHTML = d.snips.map(function (s) { return '<button type="button" role="tab">' + esc(s.tab) + '</button>'; }).join('');
     $$('button', cpTabs).forEach(function (b, i) { b.addEventListener('click', function () { showSnip(d, i); }); });
+    curD = d; memoTabs(d);
     panel.hidden = false; showSnip(d, 0);
   }
   $('#cp-close').addEventListener('click', function () { panel.hidden = true; });
@@ -498,11 +849,24 @@ body.rzing { user-select: none; cursor: ew-resize; }
       if (x.t === 'md') return '<div class="cc md">' + x.h + '</div>';
       n++;
       var lines = x.h.map(function (h) { return '<span class="ln">' + h + '</span>'; }).join('');
-      return '<div class="cc code"><div class="cc-bar"><span>셀 ' + n + '</span><span class="sp"></span><button type="button" data-i="' + i + '">복사</button></div><pre class="cp-code">' + lines + '</pre></div>';
+      return '<div class="cc code" data-i="' + i + '" data-n="' + n + '"><div class="cc-bar"><span>셀 ' + n + '</span><span class="sp"></span><button type="button" data-i="' + i + '">복사</button></div><pre class="cp-code">' + lines + '</pre></div>';
     }).join('');
     $$('.cc-bar button', clBody).forEach(function (b) { b.addEventListener('click', function () { copyText(COLAB[ch][+b.dataset.i].s, b); }); });
+    memoColab();
     clBody.scrollTop = 0;
   }
+  function memoColab() {
+    $$('.cc.code', clBody).forEach(function (cc) {
+      var x = COLAB[ch][+cc.dataset.i], cn = cc.dataset.n;
+      MEMO.decorate($('pre', cc), MEMO.textsOf(x.h), function (k) { return { ch: ch, path: 'Colab 셀 ' + cn, n: k + 1 }; });
+    });
+  }
+  MEMO.bind(cpBody); MEMO.bind(clBody);
+  MEMO.onChange(function () {
+    if (!panel.hidden) { MEMO.redecorate($('pre', cpBody)); memoJumps(); if (curD) memoTabs(curD); }
+    if (!cl.hidden) $$('.cc.code pre', clBody).forEach(MEMO.redecorate);
+  });
+  MEMO.update();
   function openColab() {
     panel.hidden = true;
     var stage = visibleStage(); if (cl.parentNode !== stage) stage.appendChild(cl);
