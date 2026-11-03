@@ -288,6 +288,23 @@ body.memo-off .memo-box { display: none; }
 .md-sub { color: var(--muted); font-size: 13px; }
 .memo-jump { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px; color: var(--memo-bar); font-weight: 700; }
 .memo-jump button { font: inherit; font-size: 12px; font-weight: 600; border: 1px solid var(--memo-bar); background: var(--memo-bg); color: var(--memo-bar); padding: 0 6px; border-radius: 5px; cursor: pointer; }
+.memosave { font: inherit; font-size: 14px; font-weight: 500; margin-left: auto; border: 1px solid var(--line); color: var(--muted); background: var(--surface);
+  padding: 4px 12px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+.memosave + .colabbtn { margin-left: 0; }
+.memosave[data-state=pend] { border-color: var(--memo-bar); color: var(--surface); background: var(--memo-bar); font-weight: 700; }
+.memosave[data-state=pend] b { display: inline-block; min-width: 1.4em; margin-left: 3px; padding: 0 5px; border-radius: 9px; background: var(--surface); color: var(--memo-bar); font-size: 12.5px; }
+.memosave[data-state=err] { border-color: #c62828; color: #c62828; }
+.memosave[data-state=saving] { border-color: var(--memo-bar); color: var(--memo-bar); }
+.memosave:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.md-chg { list-style: none; margin: 6px 0; padding: 0; max-height: 40vh; overflow: auto; border: 1px solid var(--line-soft); border-radius: 8px; }
+.md-chg li { padding: 5px 9px; border-bottom: 1px solid var(--line-soft); font-size: 13px; }
+.md-chg li:last-child { border-bottom: 0; }
+.md-k { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 0 6px; border-radius: 4px; color: #fff; }
+.md-k-add { background: #137a43; } .md-k-mod { background: #b26a00; } .md-k-del { background: #c62828; }
+.md-loc { color: var(--muted); font-size: 12px; }
+.md-t { white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 2px; }
+.md-acts { align-items: center; } .md-acts .sp { flex: 1; }
+.md-body button[disabled] { opacity: .5; cursor: default; }
 </style>
 </head>
 <body data-ch="4">
@@ -319,6 +336,7 @@ body.memo-off .memo-box { display: none; }
       <span><i class="x"></i>외부 · 함수</span>
       <span class="lgx"></span>
     </div></span>
+    <button type="button" class="memosave" id="memosave" data-state="clean">💾 메모 저장됨</button>
     <button type="button" class="colabbtn" id="colabbtn" aria-pressed="false" title="이 장의 코드를 Colab에서 실행">▶ Colab 코드</button>
   </div>
   <div id="info-wrap"></div>
@@ -576,7 +594,7 @@ body.memo-off .memo-box { display: none; }
       if (st.loading) return Promise.resolve(); st.loading = true; changed();
       return getRemote().then(function (r) { keep(r.doc, r.sha, r.src); st.error = ''; })
         .catch(function (e) { st.error = errText(e, 'load'); })
-        .then(function () { st.loading = false; changed(); if (token && pending.length) flush(); });
+        .then(function () { st.loading = false; pending = compact(pending); savePend(); changed(); });
     }
     function errText(e, what) {
       var s = e && e.status;
@@ -585,38 +603,63 @@ body.memo-off .memo-box { display: none; }
       if (s === 404) return '저장소를 찾지 못했습니다 (404). 토큰의 Repository access에 이 저장소가 들어 있는지 확인하세요.';
       return (what === 'save' ? 'GitHub에 저장하지 못했습니다' : 'GitHub에서 메모를 읽지 못했습니다') + ' (' + (e && e.message || '네트워크 오류') + ').';
     }
-    var flushing = null, again = false;
-    function flush() {
-      if (!token || !pending.length) { changed(); return Promise.resolve(); }
-      if (flushing) { again = true; return flushing; }
-      st.saving = true; changed();
-      var tries = 0;
+    /* --- 저장 안 한 변경: 메모마다 마지막 상태 하나만 남김 (GitHub에 있는 것과 같아지면 지움) --- */
+    function opId(o) { return o.op === 'put' ? o.memo.id : o.id; }
+    function compact(ops) {
+      var last = {}, order = [], rm = {};
+      ops.forEach(function (o) { var id = opId(o); if (!(id in last)) order.push(id); last[id] = o; });
+      (remote.memos || []).forEach(function (m) { rm[m.id] = m; });
+      return order.map(function (id) { return last[id]; }).filter(function (o) {
+        if (o.op === 'del') return !!rm[o.id];
+        var r = rm[o.memo.id]; return !r || JSON.stringify(r) !== JSON.stringify(o.memo);
+      });
+    }
+    function savePend() { ls(K_PEND, pending.length ? JSON.stringify(pending) : null); }
+    function changes() {
+      var rm = {}; (remote.memos || []).forEach(function (m) { rm[m.id] = m; });
+      return pending.map(function (o) { return o.op === 'del' ? { kind: 'del', memo: rm[o.id] || { id: o.id, text: '' } } : { kind: rm[o.memo.id] ? 'mod' : 'add', memo: o.memo }; });
+    }
+    function defaultMsg() {
+      var c = { add: 0, mod: 0, del: 0 }; changes().forEach(function (x) { c[x.kind]++; });
+      return 'memo: ' + [c.add ? '추가 ' + c.add : '', c.mod ? '수정 ' + c.mod : '', c.del ? '삭제 ' + c.del : ''].filter(Boolean).join(' · ');
+    }
+    function sortDoc(list) {   // 코드처럼 diff가 깔끔하도록 위치 순서로 정렬
+      return list.slice().sort(function (a, b) {
+        var la = a.loc || {}, lb = b.loc || {};
+        return ((la.ch || 0) - (lb.ch || 0)) || String(la.path || '').localeCompare(String(lb.path || '')) || ((la.n || 0) - (lb.n || 0)) || String(a.created).localeCompare(String(b.created));
+      });
+    }
+    var flushing = null;
+    function flush(msg) {   // 맨 위 "메모 저장"을 눌렀을 때만 부름 → 저장 안 한 변경 전부를 커밋 하나로
+      if (!token || !pending.length) { changed(); return Promise.resolve(false); }
+      if (flushing) return flushing;
+      st.saving = true; st.error = ''; changed();
+      var tries = 0, sent = pending.slice(), keys = sent.map(function (o) { return JSON.stringify(o); });
+      msg = (msg || '').trim() || defaultMsg();
       function attempt() {
         tries++;
-        var sent = pending.slice();
         return getRemote().then(function (r) {
-          var doc = { version: 1, memos: applyOps(r.doc.memos || [], sent) };
-          var adds = sent.filter(function (o) { return o.op === 'put'; }).length, dels = sent.length - adds;
-          var msg = 'memo: ' + (adds ? '추가·수정 ' + adds + '개' : '') + (adds && dels ? ', ' : '') + (dels ? '삭제 ' + dels + '개' : '');
-          var body = { message: msg, content: b64enc(JSON.stringify(doc, null, 1) + '\n'), branch: BRANCH };
+          var doc = { version: 1, memos: sortDoc(applyOps(r.doc.memos || [], sent)) };
+          var body = { message: msg, content: b64enc(JSON.stringify(doc, null, 2) + '\n'), branch: BRANCH };
           if (r.sha) body.sha = r.sha;
           return fetch(API, { method: 'PUT', headers: Object.assign(hdr(true), { 'Content-Type': 'application/json' }), body: JSON.stringify(body) }).then(function (res) {
             if ((res.status === 409 || res.status === 422) && tries < 4) return attempt();   // 다른 기기가 먼저 저장함 → 다시 읽고 다시 적용
             if (!res.ok) { var e = new Error('HTTP ' + res.status); e.status = res.status; throw e; }
             return res.json().then(function (j) {
-              pending = pending.slice(sent.length); ls(K_PEND, JSON.stringify(pending));
-              keep(doc, j.content && j.content.sha, 'api'); st.error = '';
+              keep(doc, j.content && j.content.sha, 'api');
+              pending = compact(pending.filter(function (o) { return keys.indexOf(JSON.stringify(o)) < 0; })); savePend();
+              st.lastCommit = j.commit && j.commit.sha ? j.commit.sha.slice(0, 7) : ''; st.lastMsg = msg; st.lastCount = sent.length;
             });
           });
         });
       }
-      flushing = attempt().catch(function (e) { st.error = errText(e, 'save'); }).then(function () {
-        st.saving = false; flushing = null; changed();
-        if (again && pending.length && !st.error) { again = false; return flush(); } again = false;
+      flushing = attempt().then(function () { return true; }, function (e) { st.error = errText(e, 'save'); return false; }).then(function (ok) {
+        st.saving = false; flushing = null; changed(); return ok;
       });
       return flushing;
     }
-    function commit(op) { pending.push(op); ls(K_PEND, JSON.stringify(pending)); changed(); return flush(); }
+    function commit(op) { st.lastCommit = ''; pending = compact(pending.concat([op])); savePend(); changed(); }
+    window.addEventListener('beforeunload', function (e) { if (pending.length) { e.preventDefault(); e.returnValue = ''; } });
 
     /* --- 화면 --- */
     function changed() { if (editing) { dirty = true; } else { listeners.forEach(function (f) { try { f(); } catch (e) {} }); } updateBtns(); renderDlg(); }
@@ -648,7 +691,7 @@ body.memo-off .memo-box { display: none; }
           var elsewhere = m.loc && !(m.loc.path === here.path && m.loc.n === here.n);
           box.innerHTML = '<div class="memo-text">' + esc(m.text) + '</div><div class="memo-meta">' +
             (elsewhere ? '<span class="memo-else">다른 곳에서 단 메모 ·</span> ' : '') + esc(locText(m.loc)) + ' · ' + esc(fmtDate(m.updated || m.created)) +
-            (isPending(m.id) ? ' · <span class="memo-pend">' + (token ? 'GitHub에 올리는 중' : '이 기기에만 있음') + '</span>' : '') +
+            (isPending(m.id) ? ' · <span class="memo-pend">저장 안 됨</span>' : '') +
             '<span class="sp"></span><button type="button" data-memo="edit">수정</button><button type="button" data-memo="del">삭제</button></div>';
           after.insertAdjacentElement('afterend', box); after = box;
         });
@@ -663,7 +706,7 @@ body.memo-off .memo-box { display: none; }
       while (sib && sib.classList.contains('memo-box')) { if (memo && sib.dataset.id === memo.id) { anchor = sib; break; } anchor = sib; sib = sib.nextElementSibling; }
       var ed = document.createElement('div'); ed.className = 'memo-edit';
       ed.innerHTML = '<textarea rows="3" placeholder="이 줄에 대한 메모 (Ctrl+Enter 저장 · Esc 취소)"></textarea><div class="memo-meta">' +
-        (token ? '저장하면 GitHub <code>memos.json</code>에 바로 올라갑니다.' : '<b>토큰이 없어서 이 기기에만 저장됩니다.</b> <button type="button" data-memo="setup">토큰 넣기</button>') +
+        '여기서 저장한 메모는 이 브라우저에만 있고, 맨 위 <b>💾 메모 저장</b>을 눌러야 GitHub에 올라갑니다.' +
         '<span class="sp"></span><button type="button" data-memo="cancel">취소</button><button type="button" class="pri" data-memo="save">저장</button></div>';
       if (memo) { var box = pre.querySelector('.memo-box[data-id="' + memo.id + '"]'); if (box) box.hidden = true; }
       anchor.insertAdjacentElement('afterend', ed);
@@ -685,7 +728,7 @@ body.memo-off .memo-box { display: none; }
       });
       ed.addEventListener('click', function (e) {
         var b = e.target.closest('button'); if (!b) return;
-        if (b.dataset.memo === 'save') save(); else if (b.dataset.memo === 'cancel') close(); else if (b.dataset.memo === 'setup') openDlg();
+        if (b.dataset.memo === 'save') save(); else if (b.dataset.memo === 'cancel') close();
       });
       ta.focus();
     }
@@ -707,14 +750,22 @@ body.memo-off .memo-box { display: none; }
 
     /* --- 메모 버튼 · 설정 창 --- */
     function updateBtns() {
-      var n = all().length, cls = st.error ? 'err' : (pending.length ? 'pend' : (token ? 'ok' : 'ro'));
+      var n = all().length, k = pending.length, cls = st.error ? 'err' : (k ? 'pend' : (token ? 'ok' : 'ro'));
       $$('.cp-tools [data-act=memo]').forEach(function (b) {
         b.dataset.state = cls; b.textContent = '📝' + (n ? ' ' + n : '');
-        b.title = '메모 설정 · ' + (st.error ? st.error : pending.length ? '아직 GitHub에 못 올린 변경 ' + pending.length + '개' : token ? 'GitHub에 연결됨' : '읽기 전용 (토큰 없음)');
+        b.title = '메모 설정 · ' + (st.error ? st.error : k ? '저장 안 한 변경 ' + k + '개' : token ? 'GitHub에 연결됨' : '읽기 전용 (토큰 없음)');
       });
+      var sb = document.getElementById('memosave');
+      if (sb) {
+        sb.dataset.state = st.saving ? 'saving' : st.error && k ? 'err' : k ? 'pend' : 'clean';
+        sb.innerHTML = st.saving ? '💾 저장 중…' : k ? '💾 메모 저장 <b>' + k + '</b>' : '💾 메모 저장됨';
+        sb.title = st.saving ? 'GitHub에 커밋하는 중' : k ? '저장 안 한 메모 변경 ' + k + '개 → 눌러서 GitHub memos.json에 한 번에 커밋 (Ctrl+S)' : '저장 안 한 변경 없음';
+      }
     }
-    var dlg = null;
-    function openDlg() {
+    var dlg = null, mode = 'set';
+    function openSave() { mode = 'save'; openDlg(true); }
+    function openDlg(keep) {
+      if (!keep) mode = 'set';
       if (!dlg) {
         dlg = document.createElement('div'); dlg.className = 'memo-dlg'; dlg.hidden = true;
         dlg.innerHTML = '<div class="md-card" role="dialog" aria-modal="true" aria-label="메모 설정"><div class="md-head"><b>📝 코드 메모</b><button type="button" class="cp-close" data-md="close" aria-label="닫기">×</button></div><div class="md-body"></div></div>';
@@ -724,27 +775,48 @@ body.memo-off .memo-box { display: none; }
           if (e.target === dlg) return closeDlg();
           var b = e.target.closest('[data-md]'); if (!b) return; var a = b.dataset.md;
           if (a === 'close') closeDlg();
-          else if (a === 'savetok') { var v = dlg.querySelector('#md-tok').value.trim(); if (!v) return; token = v; ls(K_TOK, v); st.error = ''; load(); }
+          else if (a === 'gosave') { mode = 'save'; renderDlg(); }
+          else if (a === 'goset') { mode = 'set'; renderDlg(); }
+          else if (a === 'commit') { var mi = dlg.querySelector('#md-msg'); flush(mi ? mi.value : ''); }
+          else if (a === 'savetok') { var v = dlg.querySelector('#md-tok').value.trim(); if (!v) return; token = v; ls(K_TOK, v); st.error = ''; if (pending.length) mode = 'save'; load(); }
           else if (a === 'deltok') { if (confirm('이 브라우저에서 토큰을 지울까요? (GitHub의 토큰 자체는 그대로 있습니다)')) { token = ''; ls(K_TOK, null); st.error = ''; changed(); } }
           else if (a === 'sync') { st.error = ''; load(); }
           else if (a === 'show') { var off = !b.checked; document.body.classList.toggle('memo-off', off); ls(K_OFF, off ? '1' : null); }
-          else if (a === 'droppend') { if (confirm('GitHub에 못 올린 변경 ' + pending.length + '개를 버릴까요?')) { pending = []; ls(K_PEND, null); st.error = ''; changed(); } }
+          else if (a === 'droppend') { if (confirm('저장 안 한 변경 ' + pending.length + '개를 버릴까요? 마지막으로 GitHub에 저장한 상태로 돌아갑니다.')) { pending = []; savePend(); st.error = ''; changed(); } }
         });
       }
-      dlg.hidden = false; renderDlg(); var f = dlg.querySelector('#md-tok') || dlg.querySelector('button'); if (f) f.focus();
+      dlg.hidden = false; renderDlg(); var f = dlg.querySelector('#md-msg') || dlg.querySelector('#md-tok') || dlg.querySelector('button'); if (f) f.focus();
     }
     function closeDlg() { if (dlg) dlg.hidden = true; }
     function renderDlg() {
       if (!dlg || dlg.hidden) return;
       var n = all().length, tokInput = dlg.querySelector('#md-tok'), typed = tokInput ? tokInput.value : '';
+      var msgInput = dlg.querySelector('#md-msg'), typedMsg = msgInput ? msgInput.value : null;
+      dlg.querySelector('.md-head b').textContent = mode === 'save' ? '💾 메모 저장' : '📝 코드 메모 설정';
+      if (mode === 'save') {
+        var ch = changes(), kn = { add: '추가', mod: '수정', del: '삭제' };
+        var top = st.saving ? '<p class="md-state">GitHub에 커밋하는 중…</p>' : st.error ? '<p class="md-state md-err">' + esc(st.error) + '</p>' :
+          (!ch.length && st.lastCommit) ? '<p class="md-state"><span class="md-ok">저장했습니다</span> — 커밋 <code>' + esc(st.lastCommit) + '</code> “' + esc(st.lastMsg || '') + '” (변경 ' + st.lastCount + '개)</p>' :
+          !ch.length ? '<p class="md-state">저장 안 한 변경이 없습니다. GitHub의 <code>' + FILE + '</code>와 같습니다.</p>' :
+          '<p class="md-state">저장 안 한 변경 <b>' + ch.length + '개</b>를 저장소의 <code>' + FILE + '</code>에 <b>커밋 하나</b>로 올립니다.</p>';
+        dlg.querySelector('.md-body').innerHTML = top +
+          (ch.length ? '<ul class="md-chg">' + ch.map(function (x) {
+            return '<li><span class="md-k md-k-' + x.kind + '">' + kn[x.kind] + '</span> <span class="md-loc">' + esc(locText(x.memo.loc)) + '</span><div class="md-t">' + esc(String(x.memo.text || '').slice(0, 140)) + '</div></li>'; }).join('') + '</ul>' +
+            '<p class="md-row"><input id="md-msg" type="text" autocomplete="off" spellcheck="false" aria-label="커밋 메시지"></p>' +
+            (token ? '<p class="md-row md-acts"><button type="button" data-md="droppend">변경 버리기</button><span class="sp"></span><button type="button" data-md="close">취소</button><button type="button" class="pri" data-md="commit"' + (st.saving ? ' disabled' : '') + '>GitHub에 저장 (커밋)</button></p>'
+              : '<p class="md-err">GitHub 토큰이 없어서 저장할 수 없습니다. 저장 안 한 변경은 이 브라우저에 남아 있습니다.</p><p class="md-row md-acts"><button type="button" data-md="droppend">변경 버리기</button><span class="sp"></span><button type="button" class="pri" data-md="goset">토큰 넣기</button></p>') : '') +
+          '<p class="md-note">메모는 코드처럼 관리됩니다: 메모를 쓰고 고치는 동안은 이 브라우저에만 있고, 이 버튼을 누를 때 그때까지의 변경이 커밋 하나로 올라갑니다. 저장하기 전에 다른 기기에서 쓴 메모가 있으면 합쳐서 저장합니다.</p>';
+        var mi = dlg.querySelector('#md-msg'); if (mi) mi.value = typedMsg !== null ? typedMsg : defaultMsg();
+        return;
+      }
       var state = st.loading ? '불러오는 중…' : st.saving ? 'GitHub에 저장하는 중…' : st.error ? '<span class="md-err">' + esc(st.error) + '</span>' :
-        token ? '<span class="md-ok">GitHub에 연결됨</span> — 메모를 저장하면 저장소의 <code>' + FILE + '</code>에 바로 커밋됩니다.' :
-        '<b>읽기 전용</b> — 토큰이 없어 GitHub에 있는 메모를 볼 수만 있습니다. 이 상태에서 쓴 메모는 이 기기에만 남고, 토큰을 넣으면 그때 올라갑니다.';
+        token ? '<span class="md-ok">GitHub에 연결됨</span> — 맨 위 <b>💾 메모 저장</b>을 누르면 저장소의 <code>' + FILE + '</code>에 커밋됩니다.' :
+        '<b>읽기 전용</b> — 토큰이 없어도 메모를 쓰고 고칠 수는 있지만, GitHub에 저장하려면 토큰이 필요합니다.';
       dlg.querySelector('.md-body').innerHTML =
         '<p class="md-state">' + state + '</p>' +
         '<p class="md-sub">메모 ' + n + '개' + (st.at ? ' · 마지막으로 읽은 때 ' + new Date(st.at).toLocaleString('ko-KR') : '') +
-        (pending.length ? ' · <b>아직 GitHub에 못 올린 변경 ' + pending.length + '개</b> <button type="button" data-md="droppend">버리기</button>' : '') + '</p>' +
-        '<p><button type="button" data-md="sync">지금 다시 읽기' + (token && pending.length ? ' · 올리기' : '') + '</button> ' +
+        (pending.length ? ' · <b>저장 안 한 변경 ' + pending.length + '개</b> <button type="button" data-md="gosave">저장하러 가기</button>' : '') + '</p>' +
+        '<p><button type="button" data-md="sync">GitHub에서 다시 읽기</button> ' +
         '<label class="md-chk"><input type="checkbox" data-md="show"' + (document.body.classList.contains('memo-off') ? '' : ' checked') + '> 코드에 메모 보이기</label></p>' +
         '<h4>GitHub 토큰 (쓰기용 · 기기마다 한 번)</h4>' +
         (token ? '<p>이 브라우저에 토큰이 저장돼 있습니다 (<code>' + esc(token.slice(0, 11)) + '…</code>). <button type="button" data-md="deltok">이 브라우저에서 지우기</button></p>' : '') +
@@ -753,19 +825,25 @@ body.memo-off .memo-box { display: none; }
         '<li><b>Repository access</b>: Only select repositories → <code>' + REPO.split('/')[1] + '</code></li>' +
         '<li><b>Permissions → Contents</b>: Read and write (다른 권한은 필요 없음)</li>' +
         '<li>만든 토큰을 위 칸에 붙여 넣고 저장</li></ol>' +
-        '<p class="md-note">토큰은 이 브라우저(localStorage)에만 저장되고 저장소에는 올라가지 않습니다. 공용 PC라면 다 쓴 뒤 지우세요. 저장소가 공개라서 <b>메모 내용도 공개</b>됩니다. 메모 하나를 저장할 때마다 커밋이 하나 생깁니다.</p>' +
+        '<p class="md-note">토큰은 이 브라우저(localStorage)에만 저장되고 저장소에는 올라가지 않습니다. 공용 PC라면 다 쓴 뒤 지우세요. 저장소가 공개라서 <b>메모 내용도 공개</b>됩니다. 맨 위 💾 메모 저장을 누를 때마다 그때까지의 변경이 커밋 하나로 올라갑니다.</p>' +
         '<p class="md-note">같은 코드 판단: 메모를 단 줄과, 그 위아래로 빈 줄이 아닌 줄 2개씩이 같으면 다른 상자·다른 장에서도 같은 메모가 보입니다 (공백 차이는 무시).</p>';
       if (typed) dlg.querySelector('#md-tok').value = typed;
     }
-    document.addEventListener('click', function (e) { var b = e.target.closest('.cp-tools [data-act=memo]'); if (b) openDlg(); });
+    document.addEventListener('click', function (e) { if (e.target.closest('.cp-tools [data-act=memo]')) openDlg(); else if (e.target.closest('#memosave')) openSave(); });
     window.addEventListener('keydown', function (e) {   // 설정 창이 열려 있으면 Esc는 창만 닫음 (코드 패널은 그대로)
-      if (e.key === 'Escape' && dlg && !dlg.hidden) { e.preventDefault(); e.stopPropagation(); closeDlg(); }
+      if (e.key === 'Escape' && dlg && !dlg.hidden) { e.preventDefault(); e.stopPropagation(); closeDlg(); return; }
+      if ((e.key === 's' || e.key === 'S') && (e.ctrlKey || e.metaKey) && !e.altKey) {   // Ctrl+S = 메모 저장 창 (편집 중이면 그 메모를 먼저 담음)
+        e.preventDefault(); e.stopPropagation();
+        var ed = document.activeElement && document.activeElement.closest && document.activeElement.closest('.memo-edit');
+        if (ed) { var sb = ed.querySelector('[data-memo=save]'); if (sb) sb.click(); }
+        openSave();
+      }
     }, true);
 
     load();
     setInterval(function () { if (!document.hidden && !editing && !st.saving) load(); }, 5 * 60 * 1000);
     document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - st.at > 60 * 1000 && !editing) load(); });
-    return { textsOf: textsOf, decorate: decorate, redecorate: redecorate, countFor: countFor, bind: bind, onChange: onChange, update: updateBtns, _st: st, _all: all };
+    return { openSave: openSave, textsOf: textsOf, decorate: decorate, redecorate: redecorate, countFor: countFor, bind: bind, onChange: onChange, update: updateBtns, _st: st, _all: all };
   })();
   var poolTexts = {};
   function snipTexts(pi) { return poolTexts[pi] || (poolTexts[pi] = MEMO.textsOf(POOL[pi].lines)); }
