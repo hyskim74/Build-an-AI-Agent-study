@@ -305,6 +305,8 @@ body.memo-off .memo-box { display: none; }
 .md-t { white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 2px; }
 .md-acts { align-items: center; } .md-acts .sp { flex: 1; }
 .md-body button[disabled] { opacity: .5; cursor: default; }
+.memosave small { font-size: 11.5px; font-weight: 500; opacity: .9; margin-left: 3px; }
+.md-chk + .md-chk { margin-left: 12px; } .md-chk input[disabled] + * { opacity: .5; }
 </style>
 </head>
 <body data-ch="4">
@@ -507,7 +509,8 @@ body.memo-off .memo-box { display: none; }
   var MEMO = (function () {
     var REPO = 'hyskim74/Build-an-AI-Agent-study', BRANCH = 'main', FILE = 'memos.json';
     var API = 'https://api.github.com/repos/' + REPO + '/contents/' + FILE;
-    var K_TOK = 'agentmap-memo-token', K_CACHE = 'agentmap-memo-cache', K_PEND = 'agentmap-memo-pending', K_OFF = 'agentmap-memo-off';
+    var K_TOK = 'agentmap-memo-token', K_CACHE = 'agentmap-memo-cache', K_PEND = 'agentmap-memo-pending', K_OFF = 'agentmap-memo-off', K_AUTO = 'agentmap-memo-manual';
+    var AUTO_DELAY = 20000;   // 마지막 변경 뒤 20초 동안 더 고치지 않으면 자동 저장 (그동안의 변경을 커밋 하나로)
     function lg(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
     function ls(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
     function jparse(s, d) { try { return s ? JSON.parse(s) : d; } catch (e) { return d; } }
@@ -594,7 +597,7 @@ body.memo-off .memo-box { display: none; }
       if (st.loading) return Promise.resolve(); st.loading = true; changed();
       return getRemote().then(function (r) { keep(r.doc, r.sha, r.src); st.error = ''; })
         .catch(function (e) { st.error = errText(e, 'load'); })
-        .then(function () { st.loading = false; pending = compact(pending); savePend(); changed(); });
+        .then(function () { st.loading = false; pending = compact(pending); savePend(); changed(); schedule(); });
     }
     function errText(e, what) {
       var s = e && e.status;
@@ -658,7 +661,23 @@ body.memo-off .memo-box { display: none; }
       });
       return flushing;
     }
-    function commit(op) { st.lastCommit = ''; pending = compact(pending.concat([op])); savePend(); changed(); }
+    function commit(op) { st.lastCommit = ''; pending = compact(pending.concat([op])); savePend(); st.error = ''; changed(); schedule(); }
+    /* --- 자동 저장: 토큰이 있고 자동 저장이 켜져 있으면, 마지막 변경 20초 뒤 / 탭을 떠날 때 커밋 --- */
+    var timer = null;
+    function autoOn() { return !!token && lg(K_AUTO) !== '1'; }
+    function schedule() {
+      clearTimeout(timer); timer = null; st.dueAt = 0;
+      if (!autoOn() || !pending.length || st.error) { updateBtns(); return; }
+      st.dueAt = Date.now() + AUTO_DELAY; updateBtns();
+      timer = setTimeout(autoSave, AUTO_DELAY);
+    }
+    function autoSave() {
+      clearTimeout(timer); timer = null; st.dueAt = 0;
+      if (!autoOn() || !pending.length) return;
+      if (flushing) { flushing.then(function () { if (pending.length && !st.error) schedule(); }); return; }
+      flush(defaultMsg() + ' (자동 저장)').then(function () { if (pending.length && !st.error) schedule(); });
+    }
+    document.addEventListener('visibilitychange', function () { if (document.hidden && autoOn() && pending.length && !st.error) autoSave(); });
     window.addEventListener('beforeunload', function (e) { if (pending.length) { e.preventDefault(); e.returnValue = ''; } });
 
     /* --- 화면 --- */
@@ -706,7 +725,7 @@ body.memo-off .memo-box { display: none; }
       while (sib && sib.classList.contains('memo-box')) { if (memo && sib.dataset.id === memo.id) { anchor = sib; break; } anchor = sib; sib = sib.nextElementSibling; }
       var ed = document.createElement('div'); ed.className = 'memo-edit';
       ed.innerHTML = '<textarea rows="3" placeholder="이 줄에 대한 메모 (Ctrl+Enter 저장 · Esc 취소)"></textarea><div class="memo-meta">' +
-        '여기서 저장한 메모는 이 브라우저에만 있고, 맨 위 <b>💾 메모 저장</b>을 눌러야 GitHub에 올라갑니다.' +
+        (autoOn() ? '저장하면 20초 뒤 GitHub에 자동으로 올라갑니다 (맨 위 💾 메모 저장 = 지금 올리기).' : token ? '맨 위 <b>💾 메모 저장</b>을 눌러야 GitHub에 올라갑니다.' : '토큰이 없어서 이 브라우저에만 저장됩니다. 📝 버튼에서 토큰을 넣으세요.') +
         '<span class="sp"></span><button type="button" data-memo="cancel">취소</button><button type="button" class="pri" data-memo="save">저장</button></div>';
       if (memo) { var box = pre.querySelector('.memo-box[data-id="' + memo.id + '"]'); if (box) box.hidden = true; }
       anchor.insertAdjacentElement('afterend', ed);
@@ -758,8 +777,9 @@ body.memo-off .memo-box { display: none; }
       var sb = document.getElementById('memosave');
       if (sb) {
         sb.dataset.state = st.saving ? 'saving' : st.error && k ? 'err' : k ? 'pend' : 'clean';
-        sb.innerHTML = st.saving ? '💾 저장 중…' : k ? '💾 메모 저장 <b>' + k + '</b>' : '💾 메모 저장됨';
-        sb.title = st.saving ? 'GitHub에 커밋하는 중' : k ? '저장 안 한 메모 변경 ' + k + '개 → 눌러서 GitHub memos.json에 한 번에 커밋 (Ctrl+S)' : '저장 안 한 변경 없음';
+        sb.innerHTML = st.saving ? '💾 저장 중…' : k ? '💾 메모 저장 <b>' + k + '</b>' + (st.dueAt ? ' <small>곧 자동 저장</small>' : '') : '💾 메모 저장됨';
+        sb.title = st.saving ? 'GitHub에 커밋하는 중' : st.error && k ? st.error + ' — 눌러서 다시 저장' :
+          k ? '저장 안 한 메모 변경 ' + k + '개' + (st.dueAt ? ' · 더 고치지 않으면 20초 뒤 자동으로 커밋' : '') + ' → 눌러서 지금 커밋 (Ctrl+S)' : '저장 안 한 변경 없음 (GitHub memos.json과 같음)';
       }
     }
     var dlg = null, mode = 'set';
@@ -778,9 +798,10 @@ body.memo-off .memo-box { display: none; }
           else if (a === 'gosave') { mode = 'save'; renderDlg(); }
           else if (a === 'goset') { mode = 'set'; renderDlg(); }
           else if (a === 'commit') { var mi = dlg.querySelector('#md-msg'); flush(mi ? mi.value : ''); }
-          else if (a === 'savetok') { var v = dlg.querySelector('#md-tok').value.trim(); if (!v) return; token = v; ls(K_TOK, v); st.error = ''; if (pending.length) mode = 'save'; load(); }
-          else if (a === 'deltok') { if (confirm('이 브라우저에서 토큰을 지울까요? (GitHub의 토큰 자체는 그대로 있습니다)')) { token = ''; ls(K_TOK, null); st.error = ''; changed(); } }
+          else if (a === 'savetok') { var v = dlg.querySelector('#md-tok').value.trim(); if (!v) return; token = v; ls(K_TOK, v); st.error = ''; if (pending.length && !autoOn()) mode = 'save'; load(); }
+          else if (a === 'deltok') { if (confirm('이 브라우저에서 토큰을 지울까요? (GitHub의 토큰 자체는 그대로 있습니다)')) { token = ''; ls(K_TOK, null); st.error = ''; schedule(); changed(); } }
           else if (a === 'sync') { st.error = ''; load(); }
+          else if (a === 'auto') { ls(K_AUTO, b.checked ? null : '1'); schedule(); renderDlg(); }
           else if (a === 'show') { var off = !b.checked; document.body.classList.toggle('memo-off', off); ls(K_OFF, off ? '1' : null); }
           else if (a === 'droppend') { if (confirm('저장 안 한 변경 ' + pending.length + '개를 버릴까요? 마지막으로 GitHub에 저장한 상태로 돌아갑니다.')) { pending = []; savePend(); st.error = ''; changed(); } }
         });
@@ -805,27 +826,28 @@ body.memo-off .memo-box { display: none; }
             '<p class="md-row"><input id="md-msg" type="text" autocomplete="off" spellcheck="false" aria-label="커밋 메시지"></p>' +
             (token ? '<p class="md-row md-acts"><button type="button" data-md="droppend">변경 버리기</button><span class="sp"></span><button type="button" data-md="close">취소</button><button type="button" class="pri" data-md="commit"' + (st.saving ? ' disabled' : '') + '>GitHub에 저장 (커밋)</button></p>'
               : '<p class="md-err">GitHub 토큰이 없어서 저장할 수 없습니다. 저장 안 한 변경은 이 브라우저에 남아 있습니다.</p><p class="md-row md-acts"><button type="button" data-md="droppend">변경 버리기</button><span class="sp"></span><button type="button" class="pri" data-md="goset">토큰 넣기</button></p>') : '') +
-          '<p class="md-note">메모는 코드처럼 관리됩니다: 메모를 쓰고 고치는 동안은 이 브라우저에만 있고, 이 버튼을 누를 때 그때까지의 변경이 커밋 하나로 올라갑니다. 저장하기 전에 다른 기기에서 쓴 메모가 있으면 합쳐서 저장합니다.</p>';
+          '<p class="md-note">메모는 코드처럼 관리됩니다: 저장할 때 그때까지의 변경이 커밋 하나로 올라가고, 직전에 GitHub 최신본을 다시 읽어 다른 기기에서 쓴 메모와 합칩니다.' + (autoOn() ? ' 자동 저장이 켜져 있어 이 창을 닫아도 20초 뒤 저장됩니다. 커밋 메시지를 직접 쓰려면 지금 저장하세요.' : '') + '</p>';
         var mi = dlg.querySelector('#md-msg'); if (mi) mi.value = typedMsg !== null ? typedMsg : defaultMsg();
         return;
       }
       var state = st.loading ? '불러오는 중…' : st.saving ? 'GitHub에 저장하는 중…' : st.error ? '<span class="md-err">' + esc(st.error) + '</span>' :
-        token ? '<span class="md-ok">GitHub에 연결됨</span> — 맨 위 <b>💾 메모 저장</b>을 누르면 저장소의 <code>' + FILE + '</code>에 커밋됩니다.' :
+        token ? '<span class="md-ok">GitHub에 연결됨</span> — ' + (autoOn() ? '메모를 고치고 20초 동안 더 고치지 않으면(또는 탭을 떠나면) 그동안의 변경이 <code>' + FILE + '</code>에 커밋 하나로 <b>자동 저장</b>됩니다. 맨 위 <b>💾 메모 저장</b>으로 바로 저장할 수도 있습니다.' : '맨 위 <b>💾 메모 저장</b>을 누르면 저장소의 <code>' + FILE + '</code>에 커밋됩니다 (자동 저장 꺼짐).') :
         '<b>읽기 전용</b> — 토큰이 없어도 메모를 쓰고 고칠 수는 있지만, GitHub에 저장하려면 토큰이 필요합니다.';
       dlg.querySelector('.md-body').innerHTML =
         '<p class="md-state">' + state + '</p>' +
         '<p class="md-sub">메모 ' + n + '개' + (st.at ? ' · 마지막으로 읽은 때 ' + new Date(st.at).toLocaleString('ko-KR') : '') +
         (pending.length ? ' · <b>저장 안 한 변경 ' + pending.length + '개</b> <button type="button" data-md="gosave">저장하러 가기</button>' : '') + '</p>' +
         '<p><button type="button" data-md="sync">GitHub에서 다시 읽기</button> ' +
-        '<label class="md-chk"><input type="checkbox" data-md="show"' + (document.body.classList.contains('memo-off') ? '' : ' checked') + '> 코드에 메모 보이기</label></p>' +
+        '<label class="md-chk"><input type="checkbox" data-md="show"' + (document.body.classList.contains('memo-off') ? '' : ' checked') + '> 코드에 메모 보이기</label>' +
+        '<label class="md-chk"><input type="checkbox" data-md="auto"' + (lg(K_AUTO) === '1' ? '' : ' checked') + (token ? '' : ' disabled') + '> 자동 저장 (마지막 변경 20초 뒤 · 탭을 떠날 때)</label></p>' +
         '<h4>GitHub 토큰 (쓰기용 · 기기마다 한 번)</h4>' +
         (token ? '<p>이 브라우저에 토큰이 저장돼 있습니다 (<code>' + esc(token.slice(0, 11)) + '…</code>). <button type="button" data-md="deltok">이 브라우저에서 지우기</button></p>' : '') +
         '<p class="md-row"><input id="md-tok" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"><button type="button" class="pri" data-md="savetok">' + (token ? '바꾸기' : '저장') + '</button></p>' +
         '<ol class="md-how"><li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → Fine-grained token 만들기 ↗</a></li>' +
         '<li><b>Repository access</b>: Only select repositories → <code>' + REPO.split('/')[1] + '</code></li>' +
-        '<li><b>Permissions → Contents</b>: Read and write (다른 권한은 필요 없음)</li>' +
+        '<li><b>Permissions</b>: <b>+ Add permissions</b> → <b>Contents</b> 선택 → 그 줄의 Access를 <b>Read and write</b>로 (Metadata는 자동으로 붙음, 그대로 둠)</li>' +
         '<li>만든 토큰을 위 칸에 붙여 넣고 저장</li></ol>' +
-        '<p class="md-note">토큰은 이 브라우저(localStorage)에만 저장되고 저장소에는 올라가지 않습니다. 공용 PC라면 다 쓴 뒤 지우세요. 저장소가 공개라서 <b>메모 내용도 공개</b>됩니다. 맨 위 💾 메모 저장을 누를 때마다 그때까지의 변경이 커밋 하나로 올라갑니다.</p>' +
+        '<p class="md-note">토큰은 이 브라우저(localStorage)에만 저장되고 저장소에는 올라가지 않습니다. 공용 PC라면 다 쓴 뒤 지우세요. 저장소가 공개라서 <b>메모 내용도 공개</b>됩니다. 자동 저장이든 💾 버튼이든, 그때까지의 변경이 커밋 하나로 올라갑니다.</p>' +
         '<p class="md-note">같은 코드 판단: 메모를 단 줄과, 그 위아래로 빈 줄이 아닌 줄 2개씩이 같으면 다른 상자·다른 장에서도 같은 메모가 보입니다 (공백 차이는 무시).</p>';
       if (typed) dlg.querySelector('#md-tok').value = typed;
     }
