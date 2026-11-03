@@ -521,7 +521,7 @@ body.memo-off .memo-box { display: none; }
     var pending = jparse(lg(K_PEND), []); if (!Array.isArray(pending)) pending = [];
     var st = { loaded: false, loading: false, saving: false, error: '', at: cache ? cache.at : 0, src: cache ? 'cache' : '' };
     var listeners = [];
-    var editing = 0, dirty = false;
+    var editing = 0, dirty = false, cur = null;   // cur = 지금 열려 있는 메모 입력 칸 (화면 전체에서 하나)
     if (lg(K_OFF) === '1') document.body.classList.add('memo-off');
 
     /* --- 글자 처리 --- */
@@ -689,6 +689,7 @@ body.memo-off .memo-box { display: none; }
 
     // container: <pre class="cp-code"> · texts: 줄마다 글자 · loc(i): 그 줄의 위치 정보
     function decorate(pre, texts, loc) {
+      if (cur && !document.contains(cur.ed)) finishCurrent();   // 다른 상자·탭으로 바뀌어 입력 칸이 사라졌으면: 바뀐 내용은 저장, 아니면 취소
       if (!pre) return;
       pre.__memo = { texts: texts, loc: loc };
       $$('.memo-box, .memo-edit', pre).forEach(function (x) { x.remove(); });
@@ -716,9 +717,14 @@ body.memo-off .memo-box { display: none; }
         });
       });
     }
+    function finishCurrent() { var c = cur; cur = null; if (c) c.finish(); }
     function redecorate(pre) { if (pre && pre.__memo) decorate(pre, pre.__memo.texts, pre.__memo.loc); }
     function openEditor(pre, i, memo) {
-      if (pre.querySelector('.memo-edit')) { var ta0 = pre.querySelector('.memo-edit textarea'); if (ta0) ta0.focus(); return; }
+      if (cur) {
+        if (cur.pre === pre && cur.i === i && cur.id === (memo ? memo.id : null) && document.contains(cur.ed)) { cur.ta.focus(); return; }
+        finishCurrent();   // 다른 줄을 눌렀으면: 열려 있던 메모는 바뀐 내용이 있으면 저장, 없으면 취소
+        if (memo) memo = all().find(function (x) { return x.id === memo.id; }) || null;
+      }
       var info = pre.__memo; if (!info) return;
       var lines = $$('.ln', pre), el = lines[i]; if (!el) return;
       var anchor = el, sib = el.nextElementSibling;
@@ -731,7 +737,14 @@ body.memo-off .memo-box { display: none; }
       anchor.insertAdjacentElement('afterend', ed);
       var ta = ed.querySelector('textarea'); ta.value = memo ? memo.text : '';
       editing++;
-      function close() { ed.remove(); editing = Math.max(0, editing - 1); if (dirty && !editing) { dirty = false; changed(); } else redecorate(pre); }
+      var orig = memo ? memo.text : '', done = false;
+      function close() {
+        if (done) return; done = true; if (cur && cur.ed === ed) cur = null;
+        ed.remove(); editing = Math.max(0, editing - 1); if (dirty && !editing) { dirty = false; changed(); } else redecorate(pre);
+      }
+      cur = { ed: ed, ta: ta, pre: pre, i: i, id: memo ? memo.id : null,
+        finish: function () {   // 자동 처리: 내용이 바뀌었으면 저장, 안 바뀌었거나 비웠으면 취소 (비워도 기존 메모는 지우지 않음)
+          var t = ta.value.replace(/\s+$/, ''); if (t && t !== orig) save(); else close(); } };
       function save() {
         var text = ta.value.replace(/\s+$/, '');
         if (!text) { if (memo) { close(); commit({ op: 'del', id: memo.id }); } else close(); return; }
