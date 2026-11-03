@@ -487,7 +487,7 @@ body.memo-off .memo-box { display: none; }
   var cl = $('#colabpanel'), clBody = $('#cl-body'), clBtn = $('#colabbtn'), wrap = $('#info-wrap');
   /* ---------- 코드 메모 (줄 단위 · GitHub memos.json에 저장) ---------- */
   var MEMO = (function () {
-    var REPO = 'hyskim74/build-an-ai-agent-study', BRANCH = 'main', FILE = 'memos.json';
+    var REPO = 'hyskim74/Build-an-AI-Agent-study', BRANCH = 'main', FILE = 'memos.json';
     var API = 'https://api.github.com/repos/' + REPO + '/contents/' + FILE;
     var K_TOK = 'agentmap-memo-token', K_CACHE = 'agentmap-memo-cache', K_PEND = 'agentmap-memo-pending', K_OFF = 'agentmap-memo-off';
     function lg(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
