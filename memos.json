@@ -2,6 +2,28 @@
   "version": 1,
   "memos": [
     {
+      "id": "mw641rbm-0iqhmi",
+      "text": "여기가 step()",
+      "line": "result = await self.step(context, verbose=verbose)",
+      "before": [
+        "while not context.final_result and context.current_step < self.max_steps:",
+        "context.add_event(user_event)"
+      ],
+      "after": [
+        "# NEW: Check for pending tool calls (human-in-the-loop)",
+        "if result and result.status == \"pending_confirmation\":"
+      ],
+      "loc": {
+        "ch": 6,
+        "path": "notebooks/ch06/agent.py",
+        "n": 113,
+        "box": "agent.run(user_input=None, context=None, session_id=None, tool_confirmations=None, verbose=False)",
+        "tab": "6장: Agent.run"
+      },
+      "created": "2026-11-07T07:57:22.450Z",
+      "updated": "2026-11-07T07:57:22.450Z"
+    },
+    {
       "id": "mw0127j7-6zqww6",
       "text": "책에는 이 코드를 사용하는 부분은 없음\n다만 cache에 필요한 내용이 모두 포함되어 있는 경우 \nLlmResponse 생성이 불필요하기 때문에 차후의 확장을 위해 포함된 코드.",
       "line": "if isinstance(cb_result, LlmResponse):",
