@@ -22,6 +22,27 @@
       },
       "created": "2026-11-03T01:47:07.554Z",
       "updated": "2026-11-03T01:47:07.554Z"
+    },
+    {
+      "id": "mw5wmpsr-ixu5dt",
+      "text": "여기서 MemoryTool은 기존에 해결한 적이 있는지 chromaDB search를 통해 검색하고, 관련 이력이 있는 경우에는 LlmRequest의 instruction에 그 내용을 추가한다.",
+      "line": "await tool_obj.process_llm_request(context, request)",
+      "before": [
+        "for tool_obj in self.tools:",
+        "# Let tools modify the request (Listing 6.38)"
+      ],
+      "after": [
+        "return request"
+      ],
+      "loc": {
+        "ch": 6,
+        "path": "scratch_agents/agent.py",
+        "n": 406,
+        "box": "for tool_obj in self.tools",
+        "tab": "6.38 반영본: _prepare_llm_request (scratch_agents)"
+      },
+      "created": "2026-11-07T04:29:43.323Z",
+      "updated": "2026-11-07T04:29:43.323Z"
     }
   ]
 }
