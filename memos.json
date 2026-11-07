@@ -2,6 +2,28 @@
   "version": 1,
   "memos": [
     {
+      "id": "mw6428cq-km8d7y",
+      "text": "여기서 user approval에 대한 ToolResult 생성",
+      "line": "await self._process_confirmations(context, tool_confirmations)",
+      "before": [
+        "if tool_confirmations:",
+        "# NEW: Handle tool confirmations (human-in-the-loop resume)"
+      ],
+      "after": [
+        "if user_input:",
+        "user_event = Event("
+      ],
+      "loc": {
+        "ch": 6,
+        "path": "notebooks/ch06/agent.py",
+        "n": 102,
+        "box": "agent.run(user_input=None, context=None, session_id=None, tool_confirmations=None, verbose=False)",
+        "tab": "6장: Agent.run"
+      },
+      "created": "2026-11-07T07:57:44.521Z",
+      "updated": "2026-11-07T07:57:44.521Z"
+    },
+    {
       "id": "mw641rbm-0iqhmi",
       "text": "여기가 step()",
       "line": "result = await self.step(context, verbose=verbose)",
