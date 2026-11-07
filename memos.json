@@ -46,6 +46,28 @@
       "updated": "2026-11-07T07:40:02.252Z"
     },
     {
+      "id": "mw63igts-lx8jbb",
+      "text": "c는 confirmations에 포함된 tool 즉 confirmation을 받은 tool\ntc는 pending tool에 포함된 tool",
+      "line": "(c for c in confirmations if c.tool_call_id == tc.tool_call_id),",
+      "before": [
+        "confirmation = next(",
+        "tc = pending_call.tool_call"
+      ],
+      "after": [
+        "None,",
+        ")"
+      ],
+      "loc": {
+        "ch": 6,
+        "path": "notebooks/ch06/agent.py",
+        "n": 409,
+        "box": "self._process_confirmations(context, tool_confirmations)",
+        "tab": "6장: Agent._process_confirmations"
+      },
+      "created": "2026-11-07T07:42:22.384Z",
+      "updated": "2026-11-07T07:42:22.384Z"
+    },
+    {
       "id": "mw5wmpsr-ixu5dt",
       "text": "여기서 MemoryTool은 기존에 해결한 적이 있는지 chromaDB search를 통해 검색하고, 관련 이력이 있는 경우에는 LlmRequest의 instruction에 그 내용을 추가한다.",
       "line": "await tool_obj.process_llm_request(context, request)",
